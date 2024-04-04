@@ -1,0 +1,1172 @@
+---
+title: "Puchar Świata w skokach narciarskich"
+author: "Igor Nowiński"
+date: today
+language: 'polski.yml'
+format: 
+  html:
+    echo: false
+    message: false
+    warning: false
+    self-contained: true
+    theme: paper
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+```{=html}
+<style type="text/css">
+   .main-container {max-width: 100%;}
+   .row {display: flex;}
+   .column {flex: 50%;}
+</style>
+```
+### Czym jest Puchar Świata?
+
+Rozgrywany corocznie, pomiędzy listopadem a marcem, cykl zawodów w skokach narciarskich, przeprowadzany przez [Międzynarodową Federację Narciarską](https://www.fis-ski.com/).
+
+#### Zasady
+
+W każdym konkursie bierze udział 50 skoczków, którzy wyłaniani są w kwalifikacjach przed konkursem. Skaczą oni w kolejności według zajmowanej pozycji w Pucharze Świata. 30 najlepszych kwalifikuje się do drugiej, decydującej serii, zdobywając punkty Pucharu Świata, które określone są w [tabeli -@tbl-punktacja]. Dodatkowo do drugiej serii bądź samego konkursu zostają dopuszczeni zawodnicy, którzy w kwalifikacjach uzyskali co najmniej 95% odległości najlepszego zawodnika, lecz nie uzyskali wystarczającej liczby punktów. Za zwycięstwo całego sezonu nagrodą jest Kryształowa Kula, oraz nagrody pieniężne.
+
+```{r}
+#| label: fig-krysztalowa
+#| fig-cap: Kryształowa kula
+library(tidyverse)
+library(rvest)
+library(knitr)
+library(kableExtra)
+library(ggpubr)
+library(plotly)
+include_graphics(paste0(getwd(), "/images/cup.jpg"))
+```
+
+```{r}
+#| label: dane-pelne
+factor_max = 100
+#2023
+url <- "https://www.fis-ski.com/DB/ski-jumping/cup-standings.html?sectorcode=JP&seasoncode=2023&cupcode=WC&disciplinecode=ALL&gendercode=M&nationcode="
+page <- read_html(url)
+
+Names <- page %>%
+  html_nodes("div.g-xs-10.g-sm-9") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "     ")
+Names <- Names[-1]
+
+Nation <- page %>%
+  html_nodes("div.g-xs-5.g-sm-3.g-md-2") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "                                                                                                                                            ") %>%
+  str_remove_all(pattern = "                                            ")
+  
+Rank_overall <- page %>%
+  html_nodes("div.g-xs-5.g-sm-4.g-md-5") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t")
+Rank_overall <- Rank_overall[seq(1,length(Rank_overall),2)]
+Rank_overall <- factor(Rank_overall, 
+       levels = c("", 1:factor_max), 
+       labels = c("nie podano", 1:factor_max), 
+       ordered = T)
+Rank_four_hills <- page %>%
+  html_nodes("div.g-xs-5.g-sm-4.g-md-5") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t")
+
+Rank_four_hills <- Rank_four_hills[seq(2,length(Rank_four_hills),2)]
+
+Rank_four_hills <- factor(Rank_four_hills, 
+       levels = c(1:factor_max, ""), 
+       labels = c(1:factor_max, "nie podano"), 
+       ordered = T)
+
+
+
+Points_overall <- page %>%
+  html_nodes("div.pl-xs-1.pl-sm-1.g-xs-10") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "---") %>%
+  str_remove_all(pattern = "'")
+Points_overall <- Points_overall[seq(2,length(Points_overall),2)]
+
+Points_overall <- as.numeric(Points_overall)
+
+Points_overall <- replace_na(Points_overall, replace = 0)
+
+
+Points_four_hills <- page %>%
+  html_nodes("div.pl-xs-1.pl-sm-1.g-xs-10") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "---") %>%
+  str_remove_all(pattern = "'")
+
+
+Points_four_hills <- Points_four_hills[seq(3,length(Points_four_hills),2)]
+
+Points_four_hills <- as.numeric(Points_four_hills)
+
+Points_four_hills <- replace_na(Points_four_hills, replace = 0)
+
+
+lider_punktow <- Points_overall[1]
+i = NULL
+diff = c("-") 
+for (i in 2:67){
+diff <- c(diff, 
+          Points_overall[i] - lider_punktow)
+}
+
+
+
+
+World_Cup_Men_2023 <- data.frame(Names, Nation, Rank_overall, Rank_four_hills, Points_overall, Points_four_hills, diff)
+
+
+url <- "https://www.fis-ski.com/DB/ski-jumping/cup-standings.html?sectorcode=JP&seasoncode=2022&cupcode=WC&disciplinecode=ALL&gendercode=M&nationcode="
+page <- read_html(url)
+
+Names <- page %>%
+  html_nodes("div.g-xs-10.g-sm-9") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "     ")
+Names <- Names[-1]
+
+
+Nation <- page %>%
+  html_nodes("div.g-xs-5.g-sm-3.g-md-2") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "                                                                                                                                            ") %>%
+  str_remove_all(pattern = "                                            ")
+  
+
+
+Rank_overall <- page %>%
+  html_nodes("div.g-xs-5.g-sm-4.g-md-5") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t")
+Rank_overall <- Rank_overall[seq(1,length(Rank_overall),4)]
+
+Rank_overall <- factor(Rank_overall, 
+       levels = c("", 1:factor_max), 
+       labels = c("nie podano", 1:factor_max),
+       ordered = T)
+
+
+Rank_four_hills <- page %>%
+  html_nodes("div.g-xs-5.g-sm-4.g-md-5") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t")
+
+Rank_four_hills <- Rank_four_hills[seq(2,length(Rank_four_hills),4)]
+
+Rank_four_hills <- factor(Rank_four_hills, 
+       levels = c("", 1:factor_max), 
+       labels = c("nie podano", 1:factor_max), 
+       ordered = T)
+
+
+
+Points_overall <- page %>%
+  html_nodes("div.pl-xs-1.pl-sm-1.g-xs-10") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "---") %>%
+  str_remove_all(pattern = "'")
+Points_overall <- Points_overall[seq(2,length(Points_overall),4)]
+
+Points_overall <- as.numeric(Points_overall)
+
+Points_overall <- replace_na(Points_overall, replace = 0)
+
+
+Points_four_hills <- page %>%
+  html_nodes("div.pl-xs-1.pl-sm-1.g-xs-10") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "---") %>%
+  str_remove_all(pattern = "'")
+
+
+Points_four_hills <- Points_four_hills[seq(3,length(Points_four_hills),4)]
+
+Points_four_hills <- as.numeric(Points_four_hills)
+
+Points_four_hills <- replace_na(Points_four_hills, replace = 0)
+
+World_Cup_Men_2022 <- data.frame(Names, Nation, Rank_overall, Rank_four_hills, Points_overall, Points_four_hills)
+
+url <- "https://www.fis-ski.com/DB/ski-jumping/cup-standings.html?sectorcode=JP&seasoncode=2021&cupcode=WC&disciplinecode=ALL&gendercode=M&nationcode="
+page <- read_html(url)
+
+Names <- page %>%
+  html_nodes("div.g-xs-10.g-sm-9") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "     ")
+Names <- Names[-1]
+
+
+Nation <- page %>%
+  html_nodes("div.g-xs-5.g-sm-3.g-md-2") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "                                                                                                                                            ") %>%
+  str_remove_all(pattern = "                                            ")
+  
+
+
+Rank_overall <- page %>%
+  html_nodes("div.g-xs-5.g-sm-4.g-md-5") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t")
+Rank_overall <- Rank_overall[seq(1,length(Rank_overall),3)]
+
+Rank_overall <- factor(Rank_overall, 
+       levels = c("", 1:factor_max), 
+       labels = c("nie podano", 1:factor_max),
+       ordered = T)
+
+
+Rank_four_hills <- page %>%
+  html_nodes("div.g-xs-5.g-sm-4.g-md-5") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t")
+
+Rank_four_hills <- Rank_four_hills[seq(2,length(Rank_four_hills),3)]
+
+Rank_four_hills <- factor(Rank_four_hills, 
+       levels = c("", 1:factor_max), 
+       labels = c("nie podano", 1:factor_max), 
+       ordered = T)
+
+
+
+Points_overall <- page %>%
+  html_nodes("div.pl-xs-1.pl-sm-1.g-xs-10") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "---") %>%
+  str_remove_all(pattern = "'")
+Points_overall <- Points_overall[seq(2,length(Points_overall),3)]
+
+Points_overall <- as.numeric(Points_overall)
+
+Points_overall <- replace_na(Points_overall, replace = 0)
+
+
+Points_four_hills <- page %>%
+  html_nodes("div.pl-xs-1.pl-sm-1.g-xs-10") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "---") %>%
+  str_remove_all(pattern = "'")
+
+
+Points_four_hills <- Points_four_hills[seq(3,length(Points_four_hills),3)]
+
+Points_four_hills <- as.numeric(Points_four_hills)
+
+Points_four_hills <- replace_na(Points_four_hills, replace = 0)
+
+World_Cup_Men_2021 <- data.frame(Names, Nation, Rank_overall, Rank_four_hills, Points_overall, Points_four_hills)
+
+url <- "https://www.fis-ski.com/DB/ski-jumping/cup-standings.html?sectorcode=JP&seasoncode=2020&cupcode=WC&disciplinecode=ALL&gendercode=M&nationcode="
+page <- read_html(url)
+
+Names <- page %>%
+  html_nodes("div.g-xs-10.g-sm-9") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "     ")
+Names <- Names[-1]
+
+
+Nation <- page %>%
+  html_nodes("div.g-xs-5.g-sm-3.g-md-2") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "                                                                                                                                            ") %>%
+  str_remove_all(pattern = "                                            ")
+  
+
+
+Rank_overall <- page %>%
+  html_nodes("div.g-xs-5.g-sm-4.g-md-5") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t")
+Rank_overall <- Rank_overall[seq(1,length(Rank_overall),4)]
+
+Rank_overall <- factor(Rank_overall, 
+       levels = c("", 1:factor_max), 
+       labels = c("nie podano", 1:factor_max), 
+       ordered = T)
+
+
+Rank_four_hills <- page %>%
+  html_nodes("div.g-xs-5.g-sm-4.g-md-5") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t")
+
+Rank_four_hills <- Rank_four_hills[seq(2,length(Rank_four_hills),4)]
+
+Rank_four_hills <- factor(Rank_four_hills, 
+       levels = c("", 1:factor_max), 
+       labels = c("nie podano", 1:factor_max), 
+       ordered = T)
+
+
+
+Points_overall <- page %>%
+  html_nodes("div.pl-xs-1.pl-sm-1.g-xs-10") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "---") %>%
+  str_remove_all(pattern = "'")
+Points_overall <- Points_overall[seq(2,length(Points_overall),4)]
+
+Points_overall <- as.numeric(Points_overall)
+
+Points_overall <- replace_na(Points_overall, replace = 0)
+
+
+Points_four_hills <- page %>%
+  html_nodes("div.pl-xs-1.pl-sm-1.g-xs-10") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "---") %>%
+  str_remove_all(pattern = "'")
+
+
+Points_four_hills <- Points_four_hills[seq(3,length(Points_four_hills),4)]
+
+Points_four_hills <- as.numeric(Points_four_hills)
+
+Points_four_hills <- replace_na(Points_four_hills, replace = 0)
+
+World_Cup_Men_2020 <- data.frame(Names, Nation, Rank_overall, Rank_four_hills, Points_overall, Points_four_hills)
+
+url <- "https://www.fis-ski.com/DB/ski-jumping/cup-standings.html?sectorcode=JP&seasoncode=2019&cupcode=WC&disciplinecode=ALL&gendercode=M&nationcode="
+page <- read_html(url)
+
+Names <- page %>%
+  html_nodes("div.g-xs-10.g-sm-9") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "     ")
+Names <- Names[-1]
+
+
+Nation <- page %>%
+  html_nodes("div.g-xs-5.g-sm-3.g-md-2") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "                                                                                                                                            ") %>%
+  str_remove_all(pattern = "                                            ")
+  
+
+
+Rank_overall <- page %>%
+  html_nodes("div.g-xs-5.g-sm-4.g-md-5") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t")
+Rank_overall <- Rank_overall[seq(1,length(Rank_overall),4)]
+
+Rank_overall <- factor(Rank_overall, 
+       levels = c("", 1:factor_max), 
+       labels = c("nie podano", 1:factor_max), 
+       ordered = T)
+
+
+Rank_four_hills <- page %>%
+  html_nodes("div.g-xs-5.g-sm-4.g-md-5") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t")
+
+Rank_four_hills <- Rank_four_hills[seq(2,length(Rank_four_hills),4)]
+
+Rank_four_hills <- factor(Rank_four_hills, 
+       levels = c("", 1:factor_max), 
+       labels = c("nie podano", 1:factor_max), 
+       ordered = T)
+
+
+
+Points_overall <- page %>%
+  html_nodes("div.pl-xs-1.pl-sm-1.g-xs-10") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "---") %>%
+  str_remove_all(pattern = "'")
+Points_overall <- Points_overall[seq(2,length(Points_overall),4)]
+
+Points_overall <- as.numeric(Points_overall)
+
+Points_overall <- replace_na(Points_overall, replace = 0)
+
+
+Points_four_hills <- page %>%
+  html_nodes("div.pl-xs-1.pl-sm-1.g-xs-10") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "---") %>%
+  str_remove_all(pattern = "'")
+
+
+Points_four_hills <- Points_four_hills[seq(3,length(Points_four_hills),4)]
+
+Points_four_hills <- as.numeric(Points_four_hills)
+
+Points_four_hills <- replace_na(Points_four_hills, replace = 0)
+
+World_Cup_Men_2019 <- data.frame(Names, Nation, Rank_overall, Rank_four_hills, Points_overall, Points_four_hills)
+
+#2018
+url <- "https://www.fis-ski.com/DB/ski-jumping/cup-standings.html?sectorcode=JP&seasoncode=2018&cupcode=WC&disciplinecode=ALL&gendercode=M&nationcode="
+page <- read_html(url)
+
+Names <- page %>%
+  html_nodes("div.g-xs-10.g-sm-9") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "     ")
+Names <- Names[-1]
+
+
+Nation <- page %>%
+  html_nodes("div.g-xs-5.g-sm-3.g-md-2") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "                                                                                                                                            ") %>%
+  str_remove_all(pattern = "                                            ")
+  
+
+
+Rank_overall <- page %>%
+  html_nodes("div.g-xs-5.g-sm-4.g-md-5") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t")
+Rank_overall <- Rank_overall[seq(1,length(Rank_overall),4)]
+
+Rank_overall <- factor(Rank_overall, 
+       levels = c("", 1:factor_max), 
+       labels = c("nie podano", 1:factor_max), 
+       ordered = T)
+
+
+Rank_four_hills <- page %>%
+  html_nodes("div.g-xs-5.g-sm-4.g-md-5") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t")
+
+Rank_four_hills <- Rank_four_hills[seq(2,length(Rank_four_hills),4)]
+
+Rank_four_hills <- factor(Rank_four_hills, 
+       levels = c("", 1:factor_max), 
+       labels = c("nie podano", 1:factor_max), 
+       ordered = T)
+
+
+
+Points_overall <- page %>%
+  html_nodes("div.pl-xs-1.pl-sm-1.g-xs-10") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "---") %>%
+  str_remove_all(pattern = "'")
+Points_overall <- Points_overall[seq(2,length(Points_overall),4)]
+
+Points_overall <- as.numeric(Points_overall)
+
+Points_overall <- replace_na(Points_overall, replace = 0)
+
+
+Points_four_hills <- page %>%
+  html_nodes("div.pl-xs-1.pl-sm-1.g-xs-10") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "---") %>%
+  str_remove_all(pattern = "'")
+
+
+Points_four_hills <- Points_four_hills[seq(3,length(Points_four_hills),4)]
+
+Points_four_hills <- as.numeric(Points_four_hills)
+
+Points_four_hills <- replace_na(Points_four_hills, replace = 0)
+
+World_Cup_Men_2018 <- data.frame(Names, Nation, Rank_overall, Rank_four_hills, Points_overall, Points_four_hills)
+
+#2017
+url <- "https://www.fis-ski.com/DB/ski-jumping/cup-standings.html?sectorcode=JP&seasoncode=2017&cupcode=WC&disciplinecode=ALL&gendercode=M&nationcode="
+page <- read_html(url)
+
+Names <- page %>%
+  html_nodes("div.g-xs-10.g-sm-9") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "     ")
+Names <- Names[-1]
+
+
+Nation <- page %>%
+  html_nodes("div.g-xs-5.g-sm-3.g-md-2") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "                                                                                                                                            ") %>%
+  str_remove_all(pattern = "                                            ")
+  
+
+
+Rank_overall <- page %>%
+  html_nodes("div.g-xs-5.g-sm-4.g-md-5") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t")
+Rank_overall <- Rank_overall[seq(1,length(Rank_overall),4)]
+
+Rank_overall <- factor(Rank_overall, 
+       levels = c("", 1:factor_max), 
+       labels = c("nie podano", 1:factor_max), 
+       ordered = T)
+
+
+Rank_four_hills <- page %>%
+  html_nodes("div.g-xs-5.g-sm-4.g-md-5") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t")
+
+Rank_four_hills <- Rank_four_hills[seq(2,length(Rank_four_hills),4)]
+
+Rank_four_hills <- factor(Rank_four_hills, 
+       levels = c("", 1:factor_max), 
+       labels = c("nie podano", 1:factor_max), 
+       ordered = T)
+
+
+
+Points_overall <- page %>%
+  html_nodes("div.pl-xs-1.pl-sm-1.g-xs-10") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "---") %>%
+  str_remove_all(pattern = "'")
+Points_overall <- Points_overall[seq(2,length(Points_overall),4)]
+
+Points_overall <- as.numeric(Points_overall)
+
+Points_overall <- replace_na(Points_overall, replace = 0)
+
+
+Points_four_hills <- page %>%
+  html_nodes("div.pl-xs-1.pl-sm-1.g-xs-10") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "---") %>%
+  str_remove_all(pattern = "'")
+
+
+Points_four_hills <- Points_four_hills[seq(3,length(Points_four_hills),4)]
+
+Points_four_hills <- as.numeric(Points_four_hills)
+
+Points_four_hills <- replace_na(Points_four_hills, replace = 0)
+
+World_Cup_Men_2017 <- data.frame(Names, Nation, Rank_overall, Rank_four_hills, Points_overall, Points_four_hills)
+
+#2016
+url <- "https://www.fis-ski.com/DB/ski-jumping/cup-standings.html?sectorcode=JP&seasoncode=2016&cupcode=WC&disciplinecode=ALL&gendercode=M&nationcode="
+page <- read_html(url)
+
+Names <- page %>%
+  html_nodes("div.g-xs-10.g-sm-9") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "     ")
+Names <- Names[-1]
+
+
+Nation <- page %>%
+  html_nodes("div.g-xs-5.g-sm-3.g-md-2") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "                                                                                                                                            ") %>%
+  str_remove_all(pattern = "                                            ")
+  
+
+
+Rank_overall <- page %>%
+  html_nodes("div.g-xs-5.g-sm-4.g-md-5") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t")
+Rank_overall <- Rank_overall[seq(1,length(Rank_overall),3)]
+
+Rank_overall <- factor(Rank_overall, 
+       levels = c("", 1:factor_max), 
+       labels = c("nie podano", 1:factor_max), 
+       ordered = T)
+
+
+Rank_four_hills <- page %>%
+  html_nodes("div.g-xs-5.g-sm-4.g-md-5") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t")
+
+Rank_four_hills <- Rank_four_hills[seq(2,length(Rank_four_hills),3)]
+
+Rank_four_hills <- factor(Rank_four_hills, 
+       levels = c("", 1:factor_max), 
+       labels = c("nie podano", 1:factor_max), 
+       ordered = T)
+
+
+
+Points_overall <- page %>%
+  html_nodes("div.pl-xs-1.pl-sm-1.g-xs-10") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "---") %>%
+  str_remove_all(pattern = "'")
+Points_overall <- Points_overall[seq(2,length(Points_overall),3)]
+
+Points_overall <- as.numeric(Points_overall)
+
+Points_overall <- replace_na(Points_overall, replace = 0)
+
+
+Points_four_hills <- page %>%
+  html_nodes("div.pl-xs-1.pl-sm-1.g-xs-10") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "---") %>%
+  str_remove_all(pattern = "'")
+
+
+Points_four_hills <- Points_four_hills[seq(3,length(Points_four_hills),3)]
+
+Points_four_hills <- as.numeric(Points_four_hills)
+
+Points_four_hills <- replace_na(Points_four_hills, replace = 0)
+
+World_Cup_Men_2016 <- data.frame(Names, Nation, Rank_overall, Rank_four_hills, Points_overall, Points_four_hills)
+
+#2016-2013
+for(i in 6:3) {
+url <- paste0("https://www.fis-ski.com/DB/ski-jumping/cup-standings.html?sectorcode=JP&seasoncode=201", i, "&cupcode=WC&disciplinecode=ALL&gendercode=M&nationcode=")
+page <- read_html(url)
+
+Names <- page %>%
+  html_nodes("div.g-xs-10.g-sm-9") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "     ")
+Names <- Names[-1]
+
+
+Nation <- page %>%
+  html_nodes("div.g-xs-5.g-sm-3.g-md-2") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "                                                                                                                                            ") %>%
+  str_remove_all(pattern = "                                            ")
+  
+
+
+Rank_overall <- page %>%
+  html_nodes("div.g-xs-5.g-sm-4.g-md-5") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t")
+Rank_overall <- Rank_overall[seq(1,length(Rank_overall),3)]
+
+Rank_overall <- factor(Rank_overall, 
+       levels = c("", 1:factor_max), 
+       labels = c("nie podano", 1:factor_max), 
+       ordered = T)
+
+
+Rank_four_hills <- page %>%
+  html_nodes("div.g-xs-5.g-sm-4.g-md-5") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t")
+
+Rank_four_hills <- Rank_four_hills[seq(2,length(Rank_four_hills),3)]
+
+Rank_four_hills <- factor(Rank_four_hills, 
+       levels = c("", 1:factor_max), 
+       labels = c("nie podano", 1:factor_max), 
+       ordered = T)
+
+
+
+Points_overall <- page %>%
+  html_nodes("div.pl-xs-1.pl-sm-1.g-xs-10") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "---") %>%
+  str_remove_all(pattern = "'")
+Points_overall <- Points_overall[seq(2,length(Points_overall),3)]
+
+Points_overall <- as.numeric(Points_overall)
+
+Points_overall <- replace_na(Points_overall, replace = 0)
+
+
+Points_four_hills <- page %>%
+  html_nodes("div.pl-xs-1.pl-sm-1.g-xs-10") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "---") %>%
+  str_remove_all(pattern = "'")
+
+
+Points_four_hills <- Points_four_hills[seq(3,length(Points_four_hills),3)]
+
+Points_four_hills <- as.numeric(Points_four_hills)
+
+Points_four_hills <- replace_na(Points_four_hills, replace = 0)
+
+assign(paste0("World_Cup_Men_201", i),data.frame(Names, Nation, Rank_overall, Rank_four_hills, Points_overall, Points_four_hills))
+}
+
+
+
+
+```
+
+```{r}
+#| label: historia-2023
+url <- "https://www.fis-ski.com/DB/general/statistics.html?statistictype=positions&positionstype=position&offset=50&sectorcode=JP&seasoncode=2023&categorycode=WC&gendercode=M&competitornationcode=&place=&nationcode=&position=4&disciplinecode="
+page <- read_html(url)
+
+Data <- page %>%
+  html_nodes("a.bb-xs.pb-xs-1_1.pl-xs-1.g-xs-6") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "     ")
+
+
+Miejsce <- page %>%
+  html_nodes("a.bb-xs.pb-xs-1_1.g-xs-11.g-sm-6.g-md-4") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t") %>%
+  str_remove_all(pattern = "                                                                                                                                            ") %>%
+  str_remove_all(pattern = "                                            ")
+  
+
+Kraj <- page %>%
+  html_nodes("span.country__name-short") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t")
+Kraj <- Kraj[seq(1,length(Kraj),4)]
+
+
+Pozycja <- page %>%
+  html_nodes("div.clip-sm.clip-xs") %>% 
+  html_text() %>%
+  str_remove_all(pattern = "\\n") %>%
+  str_remove_all(pattern = "\\t")
+
+Pozycja_1 <- Pozycja[seq(1,length(Pozycja),3)]
+Pozycja_2 <- Pozycja[seq(2,length(Pozycja),3)]
+Pozycja_3 <- Pozycja[seq(3,length(Pozycja), 3)]
+
+
+Historia_2023 <- data.frame(Data, Miejsce, Kraj, Pozycja_1, Pozycja_2, Pozycja_3)
+Historia_2023[Historia_2023 == "ZYLA Piotr"] <- "ZYŁA Piotr"
+Historia_2023[Historia_2023 == "WASEK Pawel"] <- "WĄSEK Paweł"
+Historia_2023[Historia_2023 == "ZNISZCZOL Aleksander"] <- "ZNISZCZOŁ Aleksander"
+```
+
+```{r}
+#| label: tbl-punktacja
+#| tbl-cap: Punktacja
+
+miejsca <- c(1:30)
+punkty <- c(100 	,80, 	60, 	50, 	45, 	40, 	36, 	32, 	29, 	26, 	24, 	22, 	20, 	18, 	16, 	15, 	14, 	13, 	12, 	11, 	10, 	9, 	8, 	7, 	6, 	5, 	4, 	3, 	2, 	1 )
+
+
+
+macierz <- matrix(c(miejsca, punkty), nrow = 2, byrow = T)
+
+df <- data.frame(macierz, row.names = c("Miejsce", "Punkty"))
+  colnames(df) = NULL
+
+  df %>% 
+    kbl(align = "c") %>%
+    kable_styling(full_width = T,
+                  position = "center",
+                  bootstrap_options = "condensed",
+                  html_font = "consolas") %>%
+    column_spec(1,
+                bold = T) %>%
+    column_spec(2,
+              background = "gold") %>%
+    column_spec(3,
+              background = "lightgray") %>%
+    column_spec(4,
+              background = "#CD7F32")
+    
+    
+    
+```
+
+### Sezon 2023 {#sec-sezon-2023}
+
+Sezon ten jest 44 edycją Pucharu Świata w skokach narciarskich mężczyzn. Zaczął się najwcześniej ze wszystkich dotychczasowych, czyli piątego listopada. Planowane zakończenie wypada drugiego kwietnia. Będzie to najdłuższy sezon w historii skoków. W [tabeli -@tbl-sez_2023] przedstawiono czołówkę 10 skoczków, pełna tabela znajduje się [tutaj](https://www.fis-ski.com/DB/ski-jumping/cup-standings.html).
+
+```{r}
+#| label: fig-kubacki
+#| fig-cap: Dawid Kubacki, obecny lider Pucharu Świata
+
+include_graphics(paste0(getwd(), "/images/kubacki.jpg"))
+```
+
+```{r}
+#| label: tbl-sez_2023
+#| tbl-cap: Obecne wyniki skoczków w sezonie 2023
+
+#"blue", "green", "lightblue", "gray", "yellow", "darkgreen", "darkblue", "darkred", "lightgreen", "orange", "purple", "darkorange", "magenta", "pink", "gold"
+
+zdjecia_wc_2023 <- c(paste0(getwd(), "/images/pol.gif"),
+                     paste0(getwd(), "/images/nor.gif"),
+                     paste0(getwd(), "/images/slo.gif"),
+                     paste0(getwd(), "/images/aut.gif"),
+                     paste0(getwd(), "/images/pol.gif"),
+                     paste0(getwd(), "/images/aut.gif"),
+                     paste0(getwd(), "/images/aut.gif"),
+                     paste0(getwd(), "/images/pol.gif"),
+                     paste0(getwd(), "/images/aut.gif"),
+                     paste0(getwd(), "/images/ger.gif"))
+World_Cup_Men_2023[World_Cup_Men_2023 == "ZYLA Piotr"] <- "ZYŁA Piotr"
+World_Cup_Men_2023[World_Cup_Men_2023 == "WASEK Pawel"] <- "WĄSEK Paweł"
+World_Cup_Men_2023[World_Cup_Men_2023 == "ZNISZCZOL Aleksander"] <- "ZNISZCZOŁ Aleksander"
+
+World_Cup_Men_2023 %>%
+  select("Skoczek" = Names, 
+         "Narodowość" = Nation, 
+         "Pozycja" = Rank_overall, 
+         "Punkty" = Points_overall,
+         "Różnica" = diff) %>%
+  head(10) %>%
+  kbl(align = "c") %>%
+    kable_styling(full_width = T,
+                  position = "center",
+                  bootstrap_options = "condensed",
+                  html_font = "consolas") %>%
+    row_spec(1,
+              background = "gold",
+              bold = T) %>%
+  row_spec(2,
+              background = "lightgray") %>%
+  row_spec(3,
+              background = "#CD7F32") %>%
+  column_spec(2, 
+              color = factor(World_Cup_Men_2023$Nation, 
+                             unique(World_Cup_Men_2023$Nation), 
+              c("red", "black", "black", "black", "black", "black", "black", "black", "black", "black", "black", "black", "black", "black", "black", "black")),
+              image = spec_image(zdjecia_wc_2023, width = 120, height = 80, res = 300))
+```
+
+#### Przeszłe konkursy obecnego sezonu
+
+Do tej pory odbyło się 14 konkursów, które znajdują się w [tabeli -@tbl-historia-2023]. 14 stycznia 2023 roku odbył się konkurs z punktacją krajową, polegającą na zsumowaniu punktów skoczków danego kraju.
+
+```{r}
+#| label: fig-skocznia_zakopane
+#| fig-cap: Skocznia w Zakopanem
+
+include_graphics(paste0(getwd(), "/images/zakopane.jpg"))
+```
+
+```{r}
+#| label: tbl-historia-2023
+#| tbl-cap: Historia ostatnich konkursów sezonu 2023
+zdjecia_historia <- c(paste0(getwd(), "/images/pol.gif"),
+                     paste0(getwd(), "/images/pol.gif"),
+                     paste0(getwd(), "/images/aut.gif"),
+                     paste0(getwd(), "/images/aut.gif"),
+                     paste0(getwd(), "/images/ger.gif"),
+                     paste0(getwd(), "/images/ger.gif"),
+                     paste0(getwd(), "/images/sui.gif"),
+                     paste0(getwd(), "/images/sui.gif"),
+                     paste0(getwd(), "/images/ger.gif"),
+                     paste0(getwd(), "/images/ger.gif"),
+                     paste0(getwd(), "/images/fin.gif"),
+                     paste0(getwd(), "/images/fin.gif"),
+                     paste0(getwd(), "/images/pol.gif"),
+                     paste0(getwd(), "/images/pol.gif"))
+
+Historia_2023[Historia_2023 == "Wisla"] <- "Wisła"
+
+Historia_2023 %>%
+  select(Data, Miejsce, "Kraj konkursu" = Kraj, "Zwyciężca" = Pozycja_1, "2 Miejsce" = Pozycja_2, "3 Miejsce" = Pozycja_3) %>%
+  kbl(align = "c") %>%
+  kable_styling(position = "center",
+                bootstrap_options = "condensed",
+                html_font = "consolas") %>%
+  column_spec(3, image = spec_image(path = zdjecia_historia, width = 120, height = 80, res = 300)) %>%
+  column_spec(4, background = "gold") %>%
+  column_spec(5, background = "lightgray") %>%
+  column_spec(6, background = "#CD7F32") %>%
+  column_spec(2, bold = T)
+```
+
+### Polska na mistrzostwach
+
+```{r}
+#| label: dane-polska
+
+polska_2013 <- World_Cup_Men_2013 %>%
+  select(Nation, Points_overall) %>%
+  filter(Nation == "POL") %>%
+  group_by(Nation) %>%
+  summarise(Suma = sum(Points_overall), 
+            Mean = mean(Points_overall))
+polska_2014 <- World_Cup_Men_2014 %>%
+  select(Nation, Points_overall) %>%
+  filter(Nation == "POL") %>%
+  group_by(Nation) %>%
+  summarise(Suma = sum(Points_overall), 
+            Mean = mean(Points_overall))
+polska_2015 <- World_Cup_Men_2015 %>%
+  select(Nation, Points_overall) %>%
+  filter(Nation == "POL") %>%
+  group_by(Nation) %>%
+  summarise(Suma = sum(Points_overall), 
+            Mean = mean(Points_overall))
+polska_2016 <- World_Cup_Men_2016 %>%
+  select(Nation, Points_overall) %>%
+  filter(Nation == "POL") %>%
+  group_by(Nation) %>%
+  summarise(Suma = sum(Points_overall), 
+            Mean = mean(Points_overall))
+polska_2017 <- World_Cup_Men_2017 %>%
+  select(Nation, Points_overall) %>%
+  filter(Nation == "POL") %>%
+  group_by(Nation) %>%
+  summarise(Suma = sum(Points_overall), 
+            Mean = mean(Points_overall))
+polska_2018 <- World_Cup_Men_2018 %>%
+  select(Nation, Points_overall) %>%
+  filter(Nation == "POL") %>%
+  group_by(Nation) %>%
+  summarise(Suma = sum(Points_overall), 
+            Mean = mean(Points_overall))
+polska_2019 <- World_Cup_Men_2019 %>%
+  select(Nation, Points_overall) %>%
+  filter(Nation == "POL") %>%
+  group_by(Nation) %>%
+  summarise(Suma = sum(Points_overall), 
+            Mean = mean(Points_overall))
+polska_2020 <- World_Cup_Men_2020 %>%
+  select(Nation, Points_overall) %>%
+  filter(Nation == "POL") %>%
+  group_by(Nation) %>%
+  summarise(Suma = sum(Points_overall), 
+            Mean = mean(Points_overall))
+polska_2021 <- World_Cup_Men_2021 %>%
+  select(Nation, Points_overall) %>%
+  filter(Nation == "POL") %>%
+  group_by(Nation) %>%
+  summarise(Suma = sum(Points_overall), 
+            Mean = mean(Points_overall))
+polska_2022 <- World_Cup_Men_2022 %>%
+  select(Nation, Points_overall) %>%
+  filter(Nation == "POL") %>%
+  group_by(Nation) %>%
+  summarise(Suma = sum(Points_overall), 
+            Mean = mean(Points_overall))
+polska_2023 <- World_Cup_Men_2023 %>%
+  select(Nation, Points_overall) %>%
+  filter(Nation == "POL") %>%
+  group_by(Nation) %>%
+  summarise(Suma = sum(Points_overall), 
+            Mean = mean(Points_overall))
+polska <- rbind(polska_2013, polska_2014, polska_2015, polska_2016, polska_2017, polska_2018, polska_2019, polska_2020, polska_2021, polska_2022, polska_2023)
+```
+
+Jak widać na [wykresie -@fig-polska_suma] oraz na [wykresie -@fig-polska_srednia] Polacy nie mieli dobrego sezonu w 2016 oraz 2022 roku, natomiast najlepiej wypadł sezon w 2019 roku.
+
+```{r}
+#| label: fig-polska_suma
+#| fig-cap: Suma punktów polskich skoczków
+
+suma <- polska %>%
+  mutate(Rok = 2013:2023) %>%
+  arrange(desc(Suma)) %>%
+  group_by(Rok) %>%
+  ggplot(aes(Rok, Suma)) + 
+  geom_col(position = "stack", color = "black", fill = "red") + 
+  labs(x = "Lata", 
+       y = "Suma punktów")
+
+ggplotly(suma)
+```
+
+```{r}
+#| label: fig-polska_srednia
+#| fig-cap: Średnia punktów polskich skoczków
+srednia <- polska %>%
+  mutate(Rok = 2013:2023) %>%
+  mutate(Średnia = Mean) %>%
+  arrange(desc(Średnia)) %>%
+  group_by(Rok) %>%
+  ggplot(aes(Rok,Średnia)) + 
+  geom_col(position = "stack", color = "black", fill = "red") + 
+  labs(x = "Lata", 
+       y = "Średnia")
+
+ggplotly(srednia)
+```
+
+```{r}
+#| label: tbl-polska_2019
+#| tbl-cap: Polacy w 2019 roku
+
+World_Cup_Men_2019[World_Cup_Men_2019 == "ZYLA Piotr"] <- "ŻYŁA Piotr"
+World_Cup_Men_2019[World_Cup_Men_2019 == "WASEK Pawel"] <- "WĄSEK Paweł"
+World_Cup_Men_2019[World_Cup_Men_2019 == "ZNISZCZOL Aleksander"] <- "ZNISZCZOŁ Aleksander"
+World_Cup_Men_2019 %>%
+  filter(Nation == "POL") %>%
+  summarise("Skoczek" = Names, 
+            "Pozycja" = Rank_overall, 
+            "Punkty" = Points_overall) %>%
+  kbl(align = "c") %>%
+    kable_styling(full_width = T,
+                  position = "center",
+                  bootstrap_options = "condensed",
+                  html_font = "consolas") %>%
+    row_spec(1,
+              background = "gold",
+              bold = T)
+
+```
+
+Mimo tego, że był to najlepszy sezon ostatnich lat, większość punktów należy do 3 skoczków.
+
+```{r}
+#| label: tbl-polska_2022
+#| tbl-cap: Wyniki z ostatniego sezonu
+
+World_Cup_Men_2022[World_Cup_Men_2022 == "ZYLA Piotr"] <- "ŻYŁA Piotr"
+World_Cup_Men_2022[World_Cup_Men_2022 == "STEKALA Andrzej"] <- "STĘKAŁA Andrzej"
+World_Cup_Men_2022[World_Cup_Men_2022 == "WASEK Pawel"] <- "WĄSEK Paweł"
+World_Cup_Men_2022[World_Cup_Men_2022 == "ZNISZCZOL Aleksander"] <- "ZNISZCZOŁ Aleksander"
+World_Cup_Men_2022 %>%
+  filter(Nation == "POL") %>%
+  summarise("Skoczek" = Names, 
+            "Pozycja" = Rank_overall, 
+            "Punkty" = Points_overall) %>%
+  kbl(align = "c") %>%
+    kable_styling(full_width = T,
+                  position = "center",
+                  bootstrap_options = "condensed",
+                  html_font = "consolas") %>%
+    row_spec(1,
+              background = "gold",
+             bold = T)
+```
+
+Obecny sezon, z [tabeli -@tbl-sez_2023], **który nie jest jeszcze skończony**, wypada pozytywnie i jest zupełnym przeciwieństwem zeszłorocznego.
+
+#### Turniej Czterech Skoczni
+
+Jest to międzynarodowa impreza w skokach narciarskich mężczyzn, organizowana cyklicznie od 1953 na przełomie grudnia i stycznia każdego roku. Turniej odbywa się w czterech miastach: dwóch niemieckich (Oberstdorf, Garmisch-Partenkirchen) i dwóch austriackich (Innsbruck, Bischofshofen). Zwycięzcą danej edycji TCS zostaje zawodnik, który łącznie zdobędzie największą liczbę punktów we wszystkich czterech konkursach. Punktacja wliczana jest do Pucharu Świata. Na [wykresie -@fig-four_hills] przedstawiono liczebność zawodników tego turnieju. Najwięcej uczestników tego turnieju pochodzi z krajów, w których się on rozgrywa.
+
+```{r}
+#| label: fig-four_hills
+#| fig-cap: Ilość skoczków TCS w podziale na narodowość
+
+library(palr)
+library(scales)
+
+
+TCL_wykres <- World_Cup_Men_2023 %>%
+  count(Nation) %>%
+  arrange(desc(n)) %>%
+  mutate(Kraj = fct_reorder(Nation, -n), Ilość = n) %>%
+  ggplot(aes(Kraj, Ilość, fill = Nation)) + 
+  geom_bar(stat = "identity") + 
+  coord_flip() + 
+  scale_fill_manual(values = palr::chl_pal(length(World_Cup_Men_2023$Nation))) +
+  labs(y = "Ilość",
+       x = "Kraj") +
+  theme(legend.position = "none")
+  ggplotly(TCL_wykres,
+         tooltip = c("x", "y"))
+```
+
+#### Źródła
+
+-   [fis-ski/statistics](https://www.fis-ski.com/DB/general/statistics.html?statistictype=positions&positionstype=position&offset=50&sectorcode=JP&seasoncode=2023&categorycode=WC&gendercode=M&competitornationcode=&place=&nationcode=&position=4&disciplinecode=)
+
+-   [Wikipedia](https://en.wikipedia.org/wiki/FIS_Ski_Jumping_World_Cup)
+
+-   [skijumping.pl](https://www.skijumping.pl/skocznie/315/wielka-krokiew)
+
+-   [tvp.pl](https://sport.tvp.pl/46081164/skoki-narciarskie-dawid-kubacki-najwyzej-z-polakow-na-liscie-plac)
+
+-   Użyte paczki R: *tidyverse*, *rvest*, *knitr*, *kableExtra*, *ggpubr, plotly, palr*
